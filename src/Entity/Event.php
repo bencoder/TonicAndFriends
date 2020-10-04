@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\EventRepository;
+use App\Util\DateTimeProvider;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -40,11 +41,12 @@ class Event
 
     public function __construct(Pet $pet, string $type)
     {
-        if ($type !== 'feed' || $type !== 'stroke') {
-
+        if ($type !== 'feed' && $type !== 'stroke') {
+            throw new \Exception('Invalid event type');
         }
+
         $this->type = $type;
-        $this->createdAt = new \DateTime();
+        $this->createdAt = DateTimeProvider::getCurrentDate();
         $this->pet = $pet;
     }
 

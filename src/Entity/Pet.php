@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\PetRepository;
+use App\Util\DateTimeProvider;
 use DateTimeInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping\InheritanceType;
@@ -74,7 +75,7 @@ abstract class Pet
         $this->userId = $userId;
         $this->name = $name;
         $this->events = new ArrayCollection();
-        $this->createdAt = new \DateTime();
+        $this->createdAt = DateTimeProvider::getCurrentDate();
     }
 
     public function getId(): ?int
@@ -123,7 +124,7 @@ abstract class Pet
      */
     public function getHappiness(): float
     {
-        $happiness = 0.5;  
+        $happiness = 0.5;
         $lastEventTime = $this->createdAt;
         
         $strokes = $this->events->filter(
@@ -137,7 +138,7 @@ abstract class Pet
             $lastEventTime = $strokeEvent->getCreatedAt();
         }
 
-        $happiness -= $this->getHappinessReduction($lastEventTime, new \DateTime());
+        $happiness -= $this->getHappinessReduction($lastEventTime, DateTimeProvider::getCurrentDate());
         $happiness = max(0, min(1,$happiness));
 
         return $happiness;
@@ -162,7 +163,7 @@ abstract class Pet
             $lastEventTime = $feedEvent->getCreatedAt();
         };
 
-        $hunger += $this->getHungerIncrease($lastEventTime, new \DateTime());
+        $hunger += $this->getHungerIncrease($lastEventTime, DateTimeProvider::getCurrentDate());
         $hunger = max(0, min(1,$hunger));
 
         return $hunger;

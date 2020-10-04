@@ -2,6 +2,8 @@
 // src/Controller/LuckyController.php
 namespace App\Controller;
 
+use App\Exception\InvalidInputException;
+use App\Exception\PetNotFoundException;
 use App\Repository\PetRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
@@ -12,8 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Moviecontroller.
- * @Route("/pet",name="pet")
+ * Pet Controller
  */
 class PetController extends AbstractController
 {
@@ -35,45 +36,48 @@ class PetController extends AbstractController
     }
 
     /**
-     * @Route("/", name="create", methods={"POST"})
+     * @Route("/pet", name="create", methods={"POST"})
      */
     public function createPet(Request $request): Response
     {
       $userId = 1; //TODO: this should come from an authentication solution
       $petType = $request->get('type');
       $petName = $request->get('name');
+      if (!$petName) {
+        throw new InvalidInputException("Pet name must be provided");
+      }
 
       $petClass = "\\App\\Entity\\Pet\\$petType";
       if (!class_exists($petClass)) {
-        throw new Exception("Pet type $petType is not supported");
+        throw new InvalidInputException("Pet type $petType is not supported");
       }
       $pet = new $petClass($userId, $petName);
       $this->entityManager->persist($pet);
       $this->entityManager->flush();
-      error_log('hi');
+      
       return new Response($this->serializer->serialize($pet, 'json'));
     }
 
     /**
-     * @Route("/", name="list", methods={"GET"})
+     * @Route("/pet", name="list", methods={"GET"})
      */
     public function listPets(): Response
     {
         $pets = $this->petRepository->findBy(['userId' => 1]);  //todo: get the user id from authentication
-        //TODO: check that the UserId on the Pet matches the current user
+
         return new Response(
           $this->serializer->serialize($pets, 'json')
         );
     }
 
     /**
-     * @Route("/{id}", name="get", methods={"GET"})
+     * @Route("/pet/{id}", name="get", methods={"GET"})
      */
     public function getPet(int $id): Response
     {
         $pet = $this->petRepository->findOneBy(['id' => $id]);
         if (!$pet) {
-          throw new Exception("Invalid Pet ID");
+          throw new PetNotFoundException("Invalid Pet ID");
         }
         //TODO: check that the UserId on the Pet matches the current user
         return new Response(
@@ -82,13 +86,13 @@ class PetController extends AbstractController
     }
 
     /**
-     * @Route("/{id}/feed", name="feed", methods={"POST"})
+     * @Route("/pet/{id}/feed", name="feed", methods={"POST"})
      */
     public function feedPet(int $id): Response
     {
         $pet = $this->petRepository->findOneBy(['id' => $id]);
         if (!$pet) {
-          throw new Exception("Invalid Pet ID");
+          throw new PetNotFoundException("Invalid Pet ID");
         }
         //TODO: check that the UserId on the Pet matches the current user
         $pet->feed();
@@ -99,13 +103,13 @@ class PetController extends AbstractController
     }
 
     /**
-     * @Route("/{id}/stroke", name="stroke", methods={"POST"})
+     * @Route("/pet/{id}/stroke", name="stroke", methods={"POST"})
      */
     public function strokePet(int $id): Response
     {
         $pet = $this->petRepository->findOneBy(['id' => $id]);
         if (!$pet) {
-          throw new Exception("Invalid Pet ID");
+          throw new PetNotFoundException("Invalid Pet ID");
         }
         //TODO: check that the UserId on the Pet matches the current user
         $pet->stroke();
