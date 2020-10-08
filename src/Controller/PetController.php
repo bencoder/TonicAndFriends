@@ -3,10 +3,10 @@
 namespace App\Controller;
 
 use App\Exception\InvalidInputException;
+use App\Exception\NotAuthorizedException;
 use App\Exception\PetNotFoundException;
 use App\Repository\PetRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Exception;
 use JMS\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -29,10 +29,14 @@ class PetController extends AbstractController
       EntityManagerInterface $entityManager, 
       SerializerInterface $serializer
     ) {
-      
       $this->petRepository = $petRepository;
       $this->entityManager = $entityManager;
       $this->serializer = $serializer;
+    }
+
+    private function getUserId(Request $request)
+    {
+      return intval($request->headers->get('user-id', 1));
     }
 
     /**
@@ -40,7 +44,7 @@ class PetController extends AbstractController
      */
     public function createPet(Request $request): Response
     {
-      $userId = 1; //TODO: this should come from an authentication solution
+      $userId = $this->getUserId($request);
       $petType = $request->get('type');
       $petName = $request->get('name');
       if (!$petName) {
@@ -61,61 +65,68 @@ class PetController extends AbstractController
     /**
      * @Route("/pet", name="list", methods={"GET"})
      */
-    public function listPets(): Response
+    public function listPets(Request $request): Response
     {
-        $pets = $this->petRepository->findBy(['userId' => 1]);  //todo: get the user id from authentication
+      $userId = $this->getUserId($request);
+      $pets = $this->petRepository->findBy(['userId' => $userId]);  
 
-        return new Response(
-          $this->serializer->serialize($pets, 'json')
-        );
+      return new Response(
+        $this->serializer->serialize($pets, 'json')
+      );
     }
 
     /**
      * @Route("/pet/{id}", name="get", methods={"GET"})
      */
-    public function getPet(int $id): Response
+    public function getPet(Request $request, int $id): Response
     {
-        $pet = $this->petRepository->findOneBy(['id' => $id]);
-        if (!$pet) {
-          throw new PetNotFoundException("Invalid Pet ID");
-        }
-        //TODO: check that the UserId on the Pet matches the current user
-        return new Response(
-          $this->serializer->serialize($pet, 'json')
-        );
+      $pet = $this->petRepository->findOneBy(['id' => $id]);
+      if (!$pet) {
+        throw new PetNotFoundException("Invalid Pet ID");
+      }
+      if ($pet->getUserId() !== $this->getUserId($request)) {
+        throw new NotAuthorizedException('You do not have permission to view this pet');
+      }
+      return new Response(
+        $this->serializer->serialize($pet, 'json')
+      );
     }
 
     /**
      * @Route("/pet/{id}/feed", name="feed", methods={"POST"})
      */
-    public function feedPet(int $id): Response
+    public function feedPet(Request $request, int $id): Response
     {
-        $pet = $this->petRepository->findOneBy(['id' => $id]);
-        if (!$pet) {
-          throw new PetNotFoundException("Invalid Pet ID");
-        }
-        //TODO: check that the UserId on the Pet matches the current user
-        $pet->feed();
-        $this->entityManager->flush();
-        return new Response(
-          $this->serializer->serialize($pet, 'json')
-        );
+      $pet = $this->petRepository->findOneBy(['id' => $id]);
+      if (!$pet) {
+        throw new PetNotFoundException("Invalid Pet ID");
+      }
+      if ($pet->getUserId() !== $this->getUserId($request)) {
+        throw new NotAuthorizedException('You do not have permission to feed this pet');
+      }
+      $pet->feed();
+      $this->entityManager->flush();
+      return new Response(
+        $this->serializer->serialize($pet, 'json')
+      );
     }
 
     /**
      * @Route("/pet/{id}/stroke", name="stroke", methods={"POST"})
      */
-    public function strokePet(int $id): Response
+    public function strokePet(Request $request, int $id): Response
     {
-        $pet = $this->petRepository->findOneBy(['id' => $id]);
-        if (!$pet) {
-          throw new PetNotFoundException("Invalid Pet ID");
-        }
-        //TODO: check that the UserId on the Pet matches the current user
-        $pet->stroke();
-        $this->entityManager->flush();
-        return new Response(
-          $this->serializer->serialize($pet, 'json')
-        );
+      $pet = $this->petRepository->findOneBy(['id' => $id]);
+      if (!$pet) {
+        throw new PetNotFoundException("Invalid Pet ID");
+      }
+      if ($pet->getUserId() !== $this->getUserId($request)) {
+        throw new NotAuthorizedException('You do not have permission to stroke this pet');
+      }
+      $pet->stroke();
+      $this->entityManager->flush();
+      return new Response(
+        $this->serializer->serialize($pet, 'json')
+      );
     }
 }

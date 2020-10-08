@@ -1,13 +1,23 @@
 # Tonic And Friends
 
-A prototype tamagotchi-style server for mediatonic test
+A prototype tamagotchi-style server
 
 ## Running it
 
-WIP (want to make it work with docker)
+The easiest way is with docker-compose:
 
 ```
-$ composer install
+$ docker-compose up app
+```
+
+The application will be available on `localhost:8000`
+
+This runs using the PHP built in server - this is not intended for production.
+
+To run the tests:
+
+```
+$ docker-compose run tests
 ```
 
 ## Methods
@@ -43,7 +53,11 @@ POST /pet/{id}/stroke
 
 ## Authentication
 
-Authentication is not implemented and all operations will be assumed to be under the user id of 1.
+Authentication is not implemented but you can pass a header of `user-id` to set your user id. For convenience in testing, this defaults to 1 if it is not passed.
+
+## Database
+
+For development purposes, I am using a sqlite database which gets created as part of the Dockerfile
 
 ## Main logic
 
