@@ -57,11 +57,11 @@ Authentication is not implemented but you can pass a header of `user-id` to set 
 
 ## Database
 
-For development purposes, I am using a sqlite database which gets created as part of the Dockerfile
+For development purposes, I am using a sqlite database which gets created during the docker build
 
 ## Main logic
 
-The main logic is in the `Pet` class in `src/Entity/Pet.php`.
+The main logic is in the `Pet` domain entity in `src/Entity/Pet.php`.
 
 Happiness and Hunger is returned on a 0 to 1 scale, and is never allowed to exceed these bounds.
 
